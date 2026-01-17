@@ -1,6 +1,7 @@
 import type { IPatient } from '@/features/patients/types'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import PatientsDashboard from '@/features/patients/PatientsDashboard';
+import PatientsDashboard from '@/features/patients/PatientsDashboard'
+import RootLayout from '@/layouts/RootLayout'
 
 // Mock data
 export const mockPatients: IPatient[] = [
@@ -50,10 +51,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta principal */}
-        <Route path="/" element={<PatientsDashboard patients={mockPatients} />} />
+        <Route element={<RootLayout />}>
+          <Route
+            path="/"
+            element={<PatientsDashboard patients={mockPatients} />}
+          />
+        </Route>
 
-        {/* Cualquier otra ruta redirige a dashboard */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
