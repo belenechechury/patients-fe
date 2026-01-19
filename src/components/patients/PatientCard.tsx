@@ -55,8 +55,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
     if (!formData.countryIso || !countries.isValid(formData.countryIso))
       newErrors.countryIso = "Invalid country";
     if (!/^\d{6,15}$/.test(formData.phoneNumber)) newErrors.phoneNumber = "6-15 digits required";
-    
-    // Image is required for new patients or if editing and no previous image
+
+    // Image required for new or edited patient without previous image
     if (!imageFile && !formData.documentImage) newErrors.documentImage = "Image is required";
 
     setErrors(newErrors);
@@ -66,7 +66,6 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
     if (attemptedSave) setErrors({});
   };
 
@@ -85,10 +84,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
       return;
     }
 
-    // Store real file for upload
     setImageFile(file);
 
-    // Store preview separately
     setFormData((prev) => ({ ...prev, documentImage: URL.createObjectURL(file) }));
 
     if (attemptedSave) setErrors({});
@@ -102,9 +99,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     setErrors({});
     setAttemptedSave(false);
 
-    if (onUpdate && imageFile) {
-      onUpdate(formData, imageFile);
-    }
+    if (onUpdate && imageFile) onUpdate(formData, imageFile);
   };
 
   const handleCancel = () => {
@@ -129,9 +124,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
             onDrop={
               isEditing
                 ? (e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files[0]) handleImageSelect(e.dataTransfer.files[0]);
-                }
+                    e.preventDefault();
+                    if (e.dataTransfer.files[0]) handleImageSelect(e.dataTransfer.files[0]);
+                  }
                 : undefined
             }
             onDragOver={isEditing ? (e) => e.preventDefault() : undefined}

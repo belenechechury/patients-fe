@@ -2,6 +2,7 @@ import type { IPaginatedResponse, IPatient } from '@/features/patients/types';
 import axios from 'axios';
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from 'snakecase-keys';
+import { snakeCase } from 'snake-case';
 
 const BASE_URL = `${import.meta.env.VITE_API_URL}/patients`;
 
@@ -9,8 +10,8 @@ const patients = {
   list: async ({
     page = 1,
     pageSize = 10,
-    search = "",
-    sortBy = "firstName",
+    search,
+    sortBy,
     createdFrom,
     createdTo
   }: {
@@ -24,17 +25,15 @@ const patients = {
     const params: Record<string, any> = {
       page,
       page_size: pageSize,
-      search,
-      sort_by: snakecaseKeys(sortBy),
+      ...(search ? { search } : {}),
+      ...(sortBy ? { sort_by: snakeCase(sortBy) } : {}),
+      ...(createdFrom ? { created_from: createdFrom } : {}),
+      ...(createdTo ? { created_to: createdTo } : {}),
     };
 
-    if (createdFrom) params.created_from = createdFrom;
-    if (createdTo) params.created_to = createdTo;
-
-    const response = await axios.get<IPaginatedResponse<any>>(BASE_URL, { params });
+    const response = await axios.get<IPaginatedResponse<IPatient>>(BASE_URL, { params });
     return camelcaseKeys(response.data, { deep: true });
   },
-
 
   getPatient: async (id: number): Promise<IPatient> => {
     const response = await axios.get<IPatient>(`${BASE_URL}/${id}`);
@@ -47,14 +46,11 @@ const patients = {
 
     Object.entries(snakePayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        // If value is a File/Blob, append directly; otherwise convert to string
-        if (value instanceof File || value instanceof Blob) {
-          formData.append(key, value);
-        } else {
-          formData.append(key, String(value));
-        }
+        formData.append(key, String(value));
       }
     });
+
+    formData.append('document_image', imageFile)
 
     const response = await axios.post<IPatient>(BASE_URL, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -69,13 +65,11 @@ const patients = {
 
     Object.entries(snakePayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (value instanceof File || value instanceof Blob) {
-          formData.append(key, value);
-        } else {
-          formData.append(key, String(value));
-        }
+        formData.append(key, String(value));
       }
     });
+
+    formData.append('document_image', imageFile)
 
     const response = await axios.put<IPatient>(`${BASE_URL}/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
