@@ -50,18 +50,19 @@ const PatientDashboard: React.FC = () => {
       firstName: "",
       lastName: "",
       email: "",
-      phone: "",
+      phoneNumber: "",
       countryIso: "",                    
-      idImg: "https://via.placeholder.com/150",
+      documentImage: "https://via.placeholder.com/150",
       isEditing: true
     };
     setLocalPatients((prev) => [newPatient, ...prev]);
   };
 
-  const handleSave = (patient: LocalPatient) => {
+  const handleSave = (patient: LocalPatient, imageFile: File) => {
     if (patient.isEditing) {
       if (patient.id === -1) {
-        createMutation.mutate(patient, {
+        createMutation.mutate({patient, imageFile},
+          {
           onSuccess: () => {
             setNotification({ message: "Patient created successfully", variant: "success" });
             setLocalPatients((prev) => prev.filter((p) => p.id !== patient.id));
@@ -70,7 +71,7 @@ const PatientDashboard: React.FC = () => {
         });
       } else {
         // Existing patient
-        updateMutation.mutate({ id: patient.id, payload: patient }, {
+        updateMutation.mutate({ id: patient.id, patient, imageFile }, {
           onSuccess: () => setNotification({ message: "Patient updated successfully", variant: "success" }),
           onError: () => setNotification({ message: "Error updating the patient", variant: "error" }),
         });

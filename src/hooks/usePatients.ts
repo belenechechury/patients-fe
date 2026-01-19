@@ -1,5 +1,5 @@
 import patients from '@/api/patients';
-import type { IPaginatedResponse, IPatient } from '@/features/patients/types';
+import type { IPatient } from '@/features/patients/types';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface UsePatientsParams {
@@ -13,18 +13,18 @@ export const usePatients = ({
   sortBy = 'firstName',
   pageSize = 10,
 }: UsePatientsParams) => {
-    const query = useInfiniteQuery({
-      queryKey: ['patients', search, sortBy],
-      queryFn: async ({ pageParam = 1 }: {pageParam: number}) => {
-        return patients.list({ page: pageParam, pageSize, search, sortBy });
-      },
-      getNextPageParam: (lastPage) =>
-        lastPage.meta.currentPage < lastPage.meta.lastPage
-          ? lastPage.meta.currentPage + 1
-          : undefined,
-      staleTime: 5000,
-      initialPageParam: 1
-    });
+  const query = useInfiniteQuery({
+    queryKey: ['patients', search, sortBy],
+    queryFn: async ({ pageParam = 1 }: { pageParam: number }) => {
+      return patients.list({ page: pageParam, pageSize, search, sortBy });
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.lastPage
+        ? lastPage.meta.currentPage + 1
+        : undefined,
+    staleTime: 5000,
+    initialPageParam: 1,
+  });
 
   const data = query.data;
 
@@ -69,7 +69,8 @@ export const usePatient = (id?: number) => {
 export const useCreatePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (payload: Partial<IPatient>) => patients.createPatient(payload),
+    mutationFn: ({ patient, imageFile }: { patient: Partial<IPatient>; imageFile: File }) =>
+      patients.createPatient(patient, imageFile),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
   });
 
@@ -79,8 +80,15 @@ export const useCreatePatient = () => {
 export const useUpdatePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<IPatient> }) =>
-      patients.updatePatient(id, payload),
+    mutationFn: ({
+      id,
+      patient,
+      imageFile,
+    }: {
+      id: number;
+      patient: Partial<IPatient>;
+      imageFile: File;
+    }) => patients.updatePatient(id, patient, imageFile),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       queryClient.invalidateQueries({ queryKey: ['patient', id] });

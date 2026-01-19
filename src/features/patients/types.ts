@@ -3,9 +3,9 @@ export interface IPatient {
   firstName: string;      
   lastName: string;       
   email: string;
-  phone: string;          
+  phoneNumber: string;          
   countryIso: string;     
-  idImg: string;   
+  documentImage: string;   
   isEditing?: boolean       
 }
 

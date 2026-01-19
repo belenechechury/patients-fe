@@ -21,7 +21,7 @@ interface PatientCardProps {
   showEdit?: boolean;
   showDelete?: boolean;
   onDelete?: (id: number) => void;
-  onUpdate?: (updatedPatient: IPatient, updatedFile?: File) => void;
+  onUpdate?: (updatedPatient: IPatient, updatedFile: File) => void;
   onCancel?: (patient: IPatient) => void;
 }
 
@@ -54,8 +54,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
     if (!/^[^\s@]+@gmail\.com$/.test(formData.email)) newErrors.email = "Must be a Gmail address";
     if (!formData.countryIso || !countries.isValid(formData.countryIso))
       newErrors.countryIso = "Invalid country";
-    if (!/^\d{6,15}$/.test(formData.phone)) newErrors.phone = "6-15 digits required";
-    if (isEditing && !formData.idImg && !imageFile) newErrors.documentImage = "Image required";
+    if (!/^\d{6,15}$/.test(formData.phoneNumber)) newErrors.phoneNumber = "6-15 digits required";
+    
+    // Image is required for new patients or if editing and no previous image
+    if (!imageFile && !formData.documentImage) newErrors.documentImage = "Image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,18 +84,27 @@ const PatientCard: React.FC<PatientCardProps> = ({
       setErrors({ documentImage: "Only JPG images allowed" });
       return;
     }
+
+    // Store real file for upload
     setImageFile(file);
-    setFormData((prev) => ({ ...prev, idImg: URL.createObjectURL(file) }));
+
+    // Store preview separately
+    setFormData((prev) => ({ ...prev, documentImage: URL.createObjectURL(file) }));
+
     if (attemptedSave) setErrors({});
   };
 
   const handleSave = () => {
     setAttemptedSave(true);
     if (!validate()) return;
+
     setIsEditing(false);
     setErrors({});
     setAttemptedSave(false);
-    if (onUpdate) onUpdate(formData, imageFile ?? undefined);
+
+    if (onUpdate && imageFile) {
+      onUpdate(formData, imageFile);
+    }
   };
 
   const handleCancel = () => {
@@ -113,22 +124,21 @@ const PatientCard: React.FC<PatientCardProps> = ({
         <div className="flex items-center space-x-4">
           {/* Image Upload */}
           <div
-            className={`h-12 w-12 rounded-full overflow-hidden border border-gray-300 cursor-pointer flex items-center justify-center relative ${
-              isEditing ? "bg-gray-100" : ""
-            }`}
+            className={`h-12 w-12 rounded-full overflow-hidden border border-gray-300 cursor-pointer flex items-center justify-center relative ${isEditing ? "bg-gray-100" : ""
+              }`}
             onDrop={
               isEditing
                 ? (e) => {
-                    e.preventDefault();
-                    if (e.dataTransfer.files[0]) handleImageSelect(e.dataTransfer.files[0]);
-                  }
+                  e.preventDefault();
+                  if (e.dataTransfer.files[0]) handleImageSelect(e.dataTransfer.files[0]);
+                }
                 : undefined
             }
             onDragOver={isEditing ? (e) => e.preventDefault() : undefined}
             onClick={() => isEditing && fileInputRef.current?.click()}
           >
             <img
-              src={formData.idImg || "/placeholder.png"}
+              src={formData.documentImage || "/placeholder.png"}
               alt={`${formData.firstName} ${formData.lastName}`}
               className="h-full w-full object-cover"
             />
@@ -149,7 +159,6 @@ const PatientCard: React.FC<PatientCardProps> = ({
           <div className="flex flex-col w-full">
             {isEditing ? (
               <div className="space-y-2">
-                {/* Name, Email */}
                 {["firstName", "lastName", "email"].map((field) => (
                   <div key={field} className="flex flex-col relative">
                     <label className="text-xs font-semibold text-primary-700">
@@ -159,15 +168,13 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       name={field}
                       value={formData[field as keyof IPatient] as string}
                       onChange={handleChange}
-                      className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${
-                        errors[field] ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${errors[field] ? "border-red-500" : "border-gray-300"
+                        }`}
                     />
                     <FormInputError message={errors[field]} />
                   </div>
                 ))}
 
-                {/* Country + Phone aligned */}
                 <div className="flex gap-2 items-end">
                   <div className="flex-1 flex flex-col">
                     <label className="text-xs font-semibold text-primary-700">Country</label>
@@ -177,21 +184,18 @@ const PatientCard: React.FC<PatientCardProps> = ({
                   <div className="flex-1 flex flex-col">
                     <label className="text-xs font-semibold text-primary-700">Phone</label>
                     <input
-                      name="phone"
-                      value={formData.phone}
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
                       onChange={handleChange}
-                      className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${
-                        errors.phone ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                        }`}
                     />
-                    <FormInputError message={errors["phone"]} />
+                    <FormInputError message={errors["phoneNumber"]} />
                   </div>
                 </div>
 
-                {/* Document image error */}
                 <FormInputError message={errors["documentImage"]} />
 
-                {/* Save & Cancel Buttons */}
                 <div className="flex gap-2 mt-2">
                   <Button
                     variant="confirm"
@@ -254,7 +258,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
             <span className="font-semibold text-primary-700">Country:</span> {formData.countryIso}
           </p>
           <p>
-            <span className="font-semibold text-primary-700">Phone:</span> {formData.phone}
+            <span className="font-semibold text-primary-700">Phone:</span> {formData.phoneNumber}
           </p>
         </div>
       )}

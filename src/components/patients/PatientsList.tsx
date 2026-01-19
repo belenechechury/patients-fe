@@ -8,7 +8,7 @@ interface PatientListProps {
   showEdit?: boolean;
   showDelete?: boolean;
   onDelete?: (id: number) => void;
-  onUpdate?: (updatedPatient: IPatient) => void;
+  onUpdate?: (updatedPatient: IPatient, imageFile: File) => void;
   onCancel?: (patient: IPatient) => void;
   onLoadMore?: () => void;
 }
@@ -23,6 +23,8 @@ const PatientList: React.FC<PatientListProps> = ({
   onCancel,
   onLoadMore,
 }) => {
+  const key = 1; 
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {
@@ -47,7 +49,7 @@ const PatientList: React.FC<PatientListProps> = ({
     >
       {patients.map((patient) => (
         <PatientCard
-          key={patient.id}
+          key={`patient-card-${key}`}
           patient={patient}
           showEdit={showEdit}
           showDelete={showDelete}
