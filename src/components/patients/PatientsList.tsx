@@ -49,7 +49,7 @@ const PatientList: React.FC<PatientListProps> = ({
     >
       {patients.map((patient) => (
         <PatientCard
-          key={`patient-card-${key}`}
+          key={`patient-card-${patient.id}`}
           patient={patient}
           showEdit={showEdit}
           showDelete={showDelete}

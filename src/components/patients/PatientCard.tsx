@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/common/Button";
 import { Dropdown } from "@/components/common/Dropdown";
 import { FormInputError } from "../common/FormInputError";
+import { getDocumentUrl } from "@/utils/getDocumentUrl";
 
 countries.registerLocale(enLocale);
 
@@ -57,7 +58,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     if (!/^\d{6,15}$/.test(formData.phoneNumber)) newErrors.phoneNumber = "6-15 digits required";
 
     // Image required for new or edited patient without previous image
-    if (!imageFile && !formData.documentImage) newErrors.documentImage = "Image is required";
+    if (!imageFile && !formData.documentImagePath) newErrors.documentImagePath = "Image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,17 +77,17 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
   const handleImageSelect = (file: File) => {
     if (file.size > 2 * 1024 * 1024) {
-      setErrors({ documentImage: "Max size 2MB" });
+      setErrors({ documentImagePath: "Max size 2MB" });
       return;
     }
     if (!["image/jpeg", "image/jpg"].includes(file.type)) {
-      setErrors({ documentImage: "Only JPG images allowed" });
+      setErrors({ documentImagePath: "Only JPG images allowed" });
       return;
     }
 
     setImageFile(file);
 
-    setFormData((prev) => ({ ...prev, documentImage: URL.createObjectURL(file) }));
+    setFormData((prev) => ({ ...prev, documentImagePath: URL.createObjectURL(file) }));
 
     if (attemptedSave) setErrors({});
   };
@@ -111,6 +112,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
     if (onCancel) onCancel(patient);
   };
 
+  const formatLabel = (field: string) => field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
+
   const saveDisabled = attemptedSave && Object.keys(errors).length > 0;
 
   return (
@@ -133,7 +136,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
             onClick={() => isEditing && fileInputRef.current?.click()}
           >
             <img
-              src={formData.documentImage || "/placeholder.png"}
+              src={imageFile ? URL.createObjectURL(imageFile) : getDocumentUrl(formData.documentImagePath) || "/placeholder.png"}
               alt={`${formData.firstName} ${formData.lastName}`}
               className="h-full w-full object-cover"
             />
@@ -160,7 +163,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       {field.charAt(0).toUpperCase() + field.slice(1)}
                     </label>
                     <input
-                      name={field}
+                      name={formatLabel(field)}
                       value={formData[field as keyof IPatient] as string}
                       onChange={handleChange}
                       className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${errors[field] ? "border-red-500" : "border-gray-300"
@@ -189,7 +192,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                   </div>
                 </div>
 
-                <FormInputError message={errors["documentImage"]} />
+                <FormInputError message={errors["documentImagePath"]} />
 
                 <div className="flex gap-2 mt-2">
                   <Button

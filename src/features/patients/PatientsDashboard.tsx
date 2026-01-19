@@ -46,13 +46,13 @@ const PatientDashboard: React.FC = () => {
 
   const handleAddPatient = () => {
     const newPatient: IPatient = {
-      id: -1,
+      id: -Date.now(),
       firstName: "",
       lastName: "",
       email: "",
       phoneNumber: "",
       countryIso: "",                    
-      documentImage: "https://via.placeholder.com/150",
+      documentImagePath: "https://via.placeholder.com/150",
       isEditing: true
     };
     setLocalPatients((prev) => [newPatient, ...prev]);
@@ -60,7 +60,7 @@ const PatientDashboard: React.FC = () => {
 
   const handleSave = (patient: LocalPatient, imageFile: File) => {
     if (patient.isEditing) {
-      if (patient.id === -1) {
+      if (patient.id < 0) {
         createMutation.mutate({patient, imageFile},
           {
           onSuccess: () => {

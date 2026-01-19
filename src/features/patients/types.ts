@@ -5,7 +5,7 @@ export interface IPatient {
   email: string;
   phoneNumber: string;          
   countryIso: string;     
-  documentImage: string;   
+  documentImagePath: string;   
   isEditing?: boolean       
 }
 
