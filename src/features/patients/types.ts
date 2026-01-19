@@ -1,18 +1,20 @@
 export interface IPatient {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    idImg: string
+  id: number;
+  firstName: string;      
+  lastName: string;       
+  email: string;
+  phone: string;          
+  countryIso: string;     
+  idImg: string;   
+  isEditing?: boolean       
 }
 
 export interface IPaginatedResponse<T> {
   data: T[];
   meta: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
+    currentPage: number;
+    lastPage: number;
+    perPage: number;
     total: number;
   };
   links?: {

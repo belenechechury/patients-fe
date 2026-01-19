@@ -1,135 +1,166 @@
-import React, { useState } from "react"
-import type { IPatient } from "@/features/patients/types"
-import PatientsList from "@/components/patients/PatientsList"
-import { Dropdown } from "@/components/common/Dropdown"
-import { Button } from "@/components/common/Button"
-import { Notification } from "@/components/common/Notification"
+import { Button } from "@/components/common/Button";
+import { Notification } from "@/components/common/Notification";
+import PatientsList from "@/components/patients/PatientsList";
+import type { IPatient } from "@/features/patients/types";
+import { Bars3Icon, PlusIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import React, { useState } from "react";
 
-import {
-  PlusIcon,
-  Squares2X2Icon,
-  Bars3Icon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline"
+import EmptyPage from "@/components/common/EmptyPage";
+import LoadingPage from "@/components/common/LoadingPage";
+import { SortBySelect } from "@/components/common/SortBySelect";
+import ToggleButtonGroup from "@/components/common/ToggleButtonGroup";
+import { useCreatePatient, useDeletePatient, usePatients, useUpdatePatient } from "@/hooks/usePatients";
 
-interface PatientDashboardProps {
-  patients: IPatient[]
+type SortBy = "firstName" | "lastName" | "email";
+type ViewMode = "Grid" | "List";
+
+interface LocalPatient extends IPatient {
+  isEditing?: boolean;
 }
 
-type SortBy = "firstName" | "lastName" | "email"
-type ViewMode = "grid" | "list"
+interface NotificationData {
+  message: string;
+  variant: "success" | "error" | "info" | "warning";
+}
 
-const PatientDashboard: React.FC<PatientDashboardProps> = ({ patients }) => {
-  const [search, setSearch] = useState("")
-  const [sortBy, setSortBy] = useState<SortBy>("firstName")
-  const [patientList, setPatientList] = useState<IPatient[]>(patients)
-  const [viewMode, setViewMode] = useState<ViewMode>("grid")
-  const [showNotification, setShowNotification] = useState(false)
+const PatientDashboard: React.FC = () => {
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("firstName");
+  const [viewMode, setViewMode] = useState<ViewMode>("Grid");
+  const [notification, setNotification] = useState<NotificationData | null>(null);
+  const [localPatients, setLocalPatients] = useState<LocalPatient[]>([]);
 
-  const sortOptions = [
-    { label: "Sort by First Name", value: "firstName" },
-    { label: "Sort by Last Name", value: "lastName" },
-    { label: "Sort by Email", value: "email" },
-  ] satisfies { label: string; value: SortBy }[]
+  const {
+    patients: fetchedPatients,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePatients({ search, sortBy });
 
-  const filteredPatients = patientList.filter((p) => {
-    const query = search.toLowerCase()
-    return (
-      p.firstName.toLowerCase().includes(query) ||
-      p.lastName.toLowerCase().includes(query) ||
-      p.email.toLowerCase().includes(query) ||
-      p.phone.toLowerCase().includes(query)
-    )
-  })
+  const createMutation = useCreatePatient();
+  const updateMutation = useUpdatePatient();
+  const deleteMutation = useDeletePatient();
 
-  const sortedPatients = filteredPatients.sort((a, b) =>
-    a[sortBy].localeCompare(b[sortBy])
-  )
+  const patients = [...localPatients, ...(fetchedPatients ?? [])];
 
   const handleAddPatient = () => {
     const newPatient: IPatient = {
-      id: Date.now(),
-      firstName: "New",
-      lastName: "Patient",
-      email: "new@example.com",
-      phone: "+1 555 000 000",
+      id: -1,
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      countryIso: "",                    
       idImg: "https://via.placeholder.com/150",
+      isEditing: true
+    };
+    setLocalPatients((prev) => [newPatient, ...prev]);
+  };
+
+  const handleSave = (patient: LocalPatient) => {
+    if (patient.isEditing) {
+      if (patient.id === -1) {
+        createMutation.mutate(patient, {
+          onSuccess: () => {
+            setNotification({ message: "Patient created successfully", variant: "success" });
+            setLocalPatients((prev) => prev.filter((p) => p.id !== patient.id));
+          },
+          onError: () => setNotification({ message: "Error creating the patient", variant: "error" }),
+        });
+      } else {
+        // Existing patient
+        updateMutation.mutate({ id: patient.id, payload: patient }, {
+          onSuccess: () => setNotification({ message: "Patient updated successfully", variant: "success" }),
+          onError: () => setNotification({ message: "Error updating the patient", variant: "error" }),
+        });
+      }
     }
+  };
 
-    setPatientList([newPatient, ...patientList])
-    setShowNotification(true)
-  }
+  const handleCancel = (patient: LocalPatient) => {
+    if (patient.id.toString().length > 10) {
+      setLocalPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    }
+  };
 
-  const toggleViewMode = () => {
-    setViewMode((prev) => (prev === "grid" ? "list" : "grid"))
-  }
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => setNotification({ message: "Patient deleted successfully", variant: "success" }),
+      onError: () => setNotification({ message: "Error deleting the patient", variant: "error" }),
+    });
+  };
+
+  const toggleViewMode = () => setViewMode((prev) => (prev === "Grid" ? "List" : "Grid"));
+
+  const sortOptions = [
+    { label: "Name", value: "firstName" },
+    { label: "Last name", value: "lastName" },
+    { label: "Email", value: "email" },
+  ] satisfies { label: string; value: SortBy }[];
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="flex flex-col gap-4 mb-6">
-        <h1 className="text-heading text-primary-700">
-          Patients Dashboard
-        </h1>
+        <h1 className="text-heading text-primary-700">Dashboard</h1>
 
-        {showNotification && (
+        {notification && (
           <Notification
-            variant="success"
-            title="Patient added"
-            icon={<CheckCircleIcon className="h-5 w-5" />}
-            onClose={() => setShowNotification(false)}
+            variant={notification.variant}
+            onClose={() => setNotification(null)}
           >
-            A new patient has been successfully added.
+            {notification.message}
           </Notification>
         )}
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <input
             type="text"
-            placeholder="Search patients..."
+            placeholder="Search patient..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="p-3 w-full max-w-md rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-300"
           />
 
           <div className="flex flex-wrap items-center gap-2">
-            <Dropdown
-              value={sortBy}
-              onChange={setSortBy}
-              options={sortOptions}
+            <SortBySelect value={sortBy} onChange={(value) => setSortBy(value as SortBy)} options={sortOptions} />
+            <ToggleButtonGroup
+              options={[
+                { value: "Grid", icon: <Squares2X2Icon className="h-5 w-5" /> },
+                { value: "List", icon: <Bars3Icon className="h-5 w-5" /> },
+              ]}
+              value={viewMode}
+              onChange={toggleViewMode}
+              iconOnly={true}
+              size="md"
             />
-
-            <Button
-              variant="secondary"
-              onClick={toggleViewMode}
-              icon={
-                viewMode === "grid"
-                  ? <Bars3Icon className="h-5 w-5" />
-                  : <Squares2X2Icon className="h-5 w-5" />
-              }
-            >
-              {viewMode === "grid" ? "List view" : "Grid view"}
-            </Button>
-
-            <Button
-              variant="primary"
-              onClick={handleAddPatient}
-              icon={<PlusIcon className="h-5 w-5" />}
-            >
-              Add Patient
+            <Button variant="primary" onClick={handleAddPatient} icon={<PlusIcon className="h-5 w-5" />}>
+              Add
             </Button>
           </div>
         </div>
       </div>
 
-      <PatientsList 
-        patients={sortedPatients} 
-        viewMode={viewMode} 
-        showEdit={true}
-        onUpdate={() => {}} 
-        showDelete={true}
-        onDelete={() => {}} />
+      {isLoading ? (
+        <LoadingPage message="Loading patients" />
+      ) : patients.length === 0 ? (
+        <EmptyPage message="No patients to show" />
+      ) : (
+        <>
+          <PatientsList
+            patients={patients}
+            viewMode={viewMode}
+            showEdit
+            showDelete
+            onUpdate={handleSave}
+            onCancel={handleCancel}
+            onDelete={handleDelete}
+            onLoadMore={hasNextPage ? fetchNextPage : undefined}
+          />
+          {isFetchingNextPage && <LoadingPage />}
+        </>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default PatientDashboard
+export default PatientDashboard;

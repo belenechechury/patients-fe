@@ -1,33 +1,37 @@
-import { useState } from "react"
-import type { ReactNode } from "react"
-import { XMarkIcon } from "@heroicons/react/24/outline"
+import { useState, type JSX } from "react"
+import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline"
 
 type NotificationVariant = "info" | "success" | "warning" | "error"
 
 type NotificationProps = {
   variant?: NotificationVariant
   title?: string
-  children: ReactNode
-  icon?: ReactNode
+  children: React.ReactNode
   onClose?: () => void
   className?: string
 }
 
 const baseStyles =
-  "flex items-start gap-3 rounded-xl p-4 text-sm shadow-sm transition"
+  "flex items-center gap-3 rounded-xl p-4 text-sm shadow-sm transition"
 
 const variantStyles: Record<NotificationVariant, string> = {
   info: "bg-slate-100 text-info",
-  success: "bg-primary-100 text-success",
+  success: "bg-green-100 text-success",
   warning: "bg-yellow-100 text-warning",
   error: "bg-red-100 text-error",
+}
+
+const variantIcons: Record<NotificationVariant, JSX.Element> = {
+  info: <InformationCircleIcon className="h-5 w-5" />,
+  success: <CheckCircleIcon className="h-5 w-5" />,
+  warning: <ExclamationTriangleIcon className="h-5 w-5" />,
+  error: <XMarkIcon className="h-5 w-5" />,
 }
 
 export function Notification({
   variant = "info",
   title,
   children,
-  icon,
   onClose,
   className = "",
 }: NotificationProps) {
@@ -45,16 +49,12 @@ export function Notification({
       role="alert"
       className={`${baseStyles} ${variantStyles[variant]} ${className}`}
     >
-      {icon && (
-        <div className="mt-0.5 h-5 w-5 shrink-0">
-          {icon}
-        </div>
-      )}
+      <div className="shrink-0 flex items-center justify-center mt-0.5">
+        {variantIcons[variant]}
+      </div>
 
       <div className="flex-1">
-        {title && (
-          <p className="font-semibold mb-1">{title}</p>
-        )}
+        {title && <p className="font-semibold mb-1">{title}</p>}
         <div>{children}</div>
       </div>
 

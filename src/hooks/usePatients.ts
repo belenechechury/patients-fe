@@ -1,29 +1,54 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import patients from '@/api/patients';
 import type { IPaginatedResponse, IPatient } from '@/features/patients/types';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export const usePatients = (page = 1) => {
-   const query = useQuery({
-    queryKey: ['patients', page] as const,
-    queryFn: async (): Promise<IPaginatedResponse<IPatient>> => {
-      return patients.list(page);
-    },
-    staleTime: 5000,
-  });
+interface UsePatientsParams {
+  search?: string;
+  sortBy?: keyof IPatient;
+  pageSize?: number;
+}
+
+export const usePatients = ({
+  search = '',
+  sortBy = 'firstName',
+  pageSize = 10,
+}: UsePatientsParams) => {
+    const query = useInfiniteQuery({
+      queryKey: ['patients', search, sortBy],
+      queryFn: async ({ pageParam = 1 }: {pageParam: number}) => {
+        return patients.list({ page: pageParam, pageSize, search, sortBy });
+      },
+      getNextPageParam: (lastPage) =>
+        lastPage.meta.currentPage < lastPage.meta.lastPage
+          ? lastPage.meta.currentPage + 1
+          : undefined,
+      staleTime: 5000,
+      initialPageParam: 1
+    });
+
+  const data = query.data;
+
+  const patientsList: IPatient[] =
+    data?.pages.flatMap((page) => page.data) ?? [];
+
+  const lastPage = data?.pages[data.pages.length - 1];
 
   return {
-    patients: query.data?.data ?? [],
-    meta: query.data?.meta,
-    links: query.data?.links,
+    patients: patientsList,
+    meta: lastPage?.meta,
+    links: lastPage?.links,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
     refetch: query.refetch,
   };
 };
 
 export const usePatient = (id?: number) => {
-  const query: UseQueryResult<IPatient, Error> = useQuery({
+  const query = useQuery({
     queryKey: ['patient', id],
     queryFn: () => {
       if (!id) throw new Error('Patient ID is required');
@@ -41,53 +66,36 @@ export const usePatient = (id?: number) => {
   };
 };
 
-export const useCreatePatient = (): {
-  createPatient: (payload: Partial<IPatient>) => void;
-  mutation: UseMutationResult<IPatient, Error, Partial<IPatient>>;
-} => {
+export const useCreatePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (payload: Partial<IPatient>) => patients.createPatient(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
   });
 
-  return {
-    createPatient: mutation.mutate,
-    mutation,
-  };
+  return mutation;
 };
 
-export const useUpdatePatient = (): {
-  updatePatient: (args: { id: number; payload: Partial<IPatient> }) => void;
-  mutation: UseMutationResult<IPatient, Error, { id: number; payload: Partial<IPatient> }>;
-} => {
+export const useUpdatePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<IPatient> }) => patients.updatePatient(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<IPatient> }) =>
+      patients.updatePatient(id, payload),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       queryClient.invalidateQueries({ queryKey: ['patient', id] });
     },
   });
 
-  return {
-    updatePatient: mutation.mutate,
-    mutation,
-  };
+  return mutation;
 };
 
-export const useDeletePatient = (): {
-  deletePatient: (id: number) => void;
-  mutation: UseMutationResult<void, Error, number>;
-} => {
+export const useDeletePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (id: number) => patients.deletePatient(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
   });
 
-  return {
-    deletePatient: mutation.mutate,
-    mutation,
-  };
+  return mutation;
 };
