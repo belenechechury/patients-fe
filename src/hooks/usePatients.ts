@@ -69,8 +69,13 @@ export const usePatient = (id?: number) => {
 export const useCreatePatient = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ patient, imageFile }: { patient: Partial<IPatient>; imageFile: File }) =>
-      patients.createPatient(patient, imageFile),
+    mutationFn: ({ patient, imageFile }: { patient: Partial<IPatient>; imageFile?: File }) => {
+      if (!imageFile) {
+        throw new Error("Image is required");
+      }
+
+      return patients.createPatient(patient, imageFile);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
   });
 
@@ -87,7 +92,7 @@ export const useUpdatePatient = () => {
     }: {
       id: number;
       patient: Partial<IPatient>;
-      imageFile: File;
+      imageFile?: File;
     }) => patients.updatePatient(id, patient, imageFile),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });

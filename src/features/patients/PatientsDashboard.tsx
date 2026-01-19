@@ -52,13 +52,13 @@ const PatientDashboard: React.FC = () => {
       email: "",
       phoneNumber: "",
       countryIso: "",                    
-      documentImagePath: "https://via.placeholder.com/150",
+      documentImagePath: "",
       isEditing: true
     };
     setLocalPatients((prev) => [newPatient, ...prev]);
   };
 
-  const handleSave = (patient: LocalPatient, imageFile: File) => {
+  const handleSave = (patient: LocalPatient, imageFile?: File) => {
     if (patient.isEditing) {
       if (patient.id < 0) {
         createMutation.mutate({patient, imageFile},

@@ -50,7 +50,7 @@ const patients = {
       }
     });
 
-    formData.append('document_image', imageFile)
+    if (imageFile) formData.append('document_image', imageFile)
 
     const response = await axios.post<IPatient>(BASE_URL, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -59,7 +59,7 @@ const patients = {
     return camelcaseKeys(response.data, { deep: true });
   },
 
-  updatePatient: async (id: number, payload: Partial<IPatient>, imageFile: File): Promise<IPatient> => {
+  updatePatient: async (id: number, payload: Partial<IPatient>, imageFile?: File): Promise<IPatient> => {
     const formData = new FormData();
     const snakePayload = snakecaseKeys(payload, { deep: true });
 
@@ -69,7 +69,7 @@ const patients = {
       }
     });
 
-    formData.append('document_image', imageFile)
+    if (imageFile) formData.append('document_image', imageFile)
 
     const response = await axios.put<IPatient>(`${BASE_URL}/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

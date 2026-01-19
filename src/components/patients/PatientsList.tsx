@@ -8,7 +8,7 @@ interface PatientListProps {
   showEdit?: boolean;
   showDelete?: boolean;
   onDelete?: (id: number) => void;
-  onUpdate?: (updatedPatient: IPatient, imageFile: File) => void;
+  onUpdate?: (updatedPatient: IPatient, imageFile?: File) => void;
   onCancel?: (patient: IPatient) => void;
   onLoadMore?: () => void;
 }
@@ -23,8 +23,6 @@ const PatientList: React.FC<PatientListProps> = ({
   onCancel,
   onLoadMore,
 }) => {
-  const key = 1; 
-
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {

@@ -22,7 +22,7 @@ interface PatientCardProps {
   showEdit?: boolean;
   showDelete?: boolean;
   onDelete?: (id: number) => void;
-  onUpdate?: (updatedPatient: IPatient, updatedFile: File) => void;
+  onUpdate?: (updatedPatient: IPatient, updatedFile?: File) => void;
   onCancel?: (patient: IPatient) => void;
 }
 
@@ -100,7 +100,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     setErrors({});
     setAttemptedSave(false);
 
-    if (onUpdate && imageFile) onUpdate(formData, imageFile);
+    if (onUpdate) onUpdate(formData, imageFile ?? undefined);
   };
 
   const handleCancel = () => {
@@ -117,7 +117,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const saveDisabled = attemptedSave && Object.keys(errors).length > 0;
 
   return (
-    <div className="bg-white shadow-sm rounded-2xl p-4 m-2 hover:shadow-md border border-gray-100">
+    <div className="h-fit bg-white shadow-sm rounded-2xl p-4 m-2 hover:shadow-md border border-gray-100">
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-4">
           {/* Image Upload */}
@@ -160,10 +160,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 {["firstName", "lastName", "email"].map((field) => (
                   <div key={field} className="flex flex-col relative">
                     <label className="text-xs font-semibold text-primary-700">
-                      {field.charAt(0).toUpperCase() + field.slice(1)}
+                      {formatLabel(field)}
                     </label>
                     <input
-                      name={formatLabel(field)}
+                      name={field}
                       value={formData[field as keyof IPatient] as string}
                       onChange={handleChange}
                       className={`border rounded px-2 py-1 focus:ring-2 focus:ring-primary-300 ${errors[field] ? "border-red-500" : "border-gray-300"
